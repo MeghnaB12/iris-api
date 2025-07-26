@@ -1,57 +1,55 @@
 # .github/workflows/cd-pipeline.yaml
 name: Build and Deploy to GKE
-
 on:
-  push:
-    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
 
 env:
-  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  GKE_CLUSTER: iris-cluster
-  GKE_ZONE: us-central1-a
-  GCP_REGION: us-central1
-  IMAGE_REPO: iris-api-repo
-  IMAGE_NAME: iris-api
-  
-jobs:
-  setup-build-publish-deploy:
-    name: Setup, Build, Publish, and Deploy
-    runs-on: ubuntu-latest
-    permissions:
-      contents: 'read' # Keep this for checking out code
-      # REMOVE THIS LINE: id-token: 'write' - This is the key change!
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GKE_CLUSTER: iris-cluster
+  GKE_ZONE: us-central1-a
+  GCP_REGION: us-central1
+  IMAGE_REPO: iris-api-repo
+  IMAGE_NAME: iris-api
 
-    - name: Authenticate to GCP
-      uses: 'google-github-actions/auth@v2'
-      with:
-        credentials_json: '${{ secrets.GKE_SA_KEY }}' # Keep this - your old way of authenticating
+jobs: # This 'jobs' should be at the same level as 'name', 'on', and 'env'
+  setup-build-publish-deploy: # This should be indented by 2 spaces from 'jobs'
+    name: Setup, Build, Publish, and Deploy # Indented by 2 spaces from 'setup-build-publish-deploy'
+    runs-on: ubuntu-latest # Indented by 2 spaces from 'setup-build-publish-deploy'
+    permissions: # Indented by 2 spaces from 'setup-build-publish-deploy'
+      contents: 'read'
+      # id-token: 'write' # Keep this commented out if using credentials_json
+    steps: # Indented by 2 spaces from 'setup-build-publish-deploy'
+    - name: Checkout code # Indented by 2 spaces from 'steps'
+      uses: actions/checkout@v4 # Indented by 2 spaces from '- name'
 
-    - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@v2
+    - name: Authenticate to GCP
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GKE_SA_KEY }}' # Indented by 4 spaces from 'with'
 
-    - name: Install gke-gcloud-auth-plugin
-      run: gcloud components install gke-gcloud-auth-plugin
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
 
-    - name: Configure Docker
-      run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev --quiet
+    - name: Install gke-gcloud-auth-plugin
+      run: gcloud components install gke-gcloud-auth-plugin
 
-    - name: Define image path
-      run: echo "IMAGE_PATH=${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}" >> $GITHUB_ENV
+    - name: Configure Docker
+      run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev --quiet
 
-    - name: Build and Push Docker image
-      run: |
-        docker build . --tag "${{ env.IMAGE_PATH }}:${{ github.sha }}"
-        docker push "${{ env.IMAGE_PATH }}:${{ github.sha }}"
+    - name: Define image path
+      run: echo "IMAGE_PATH=${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}" >> $GITHUB_ENV
 
-    - name: Deploy to GKE
-      run: |
-        gcloud container clusters get-credentials $GKE_CLUSTER --zone $GKE_ZONE
-        
-        # Note: This sed command now uses a different delimiter '|' to avoid conflict with the '/' in the image path
-        sed -i "s|image:.*|image: ${{ env.IMAGE_PATH }}:${{ github.sha }}|" kubernetes/deployment.yaml
-        
-        kubectl apply -f kubernetes/
+    - name: Build and Push Docker image
+      run: |
+        docker build . --tag "${{ env.IMAGE_PATH }}:${{ github.sha }}"
+        docker push "${{ env.IMAGE_PATH }}:${{ github.sha }}"
 
+    - name: Deploy to GKE
+      run: |
+        gcloud container clusters get-credentials $GKE_CLUSTER --zone $GKE_ZONE
+        
+        # Note: This sed command now uses a different delimiter '|' to avoid conflict with the '/' in the image path
+        sed -i "s|image:.*|image: ${{ env.IMAGE_PATH }}:${{ github.sha }}|" kubernetes/deployment.yaml
+        
+        kubectl apply -f kubernetes/
