@@ -1,13 +1,14 @@
-# service.yaml
+# kubernetes/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: iris-service
+  name: iris-api-service
 spec:
+  # This makes the service available on a public IP address
   type: LoadBalancer
   selector:
     app: iris-api
   ports:
     - protocol: TCP
-      port: 80
-      targetPort: 80
+      port: 80 # The port the service is exposed on
+      targetPort: 8000 # The port the container is running on
