@@ -7,26 +7,26 @@ on:
 env:
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GKE_CLUSTER: iris-cluster
-  GKE_ZONE: us-central1
-  GCP_REGION: us-central1
+  # REMOVE THIS LINE: GKE_ZONE: us-central1-a # <--- THIS WAS THE PROBLEM
+  GCP_REGION: us-central1 # This should be consistent with your cluster's region
   IMAGE_REPO: iris-api-repo
   IMAGE_NAME: iris-api
 
-jobs: # This 'jobs' should be at the same level as 'name', 'on', and 'env'
-  setup-build-publish-deploy: # This should be indented by 2 spaces from 'jobs'
-    name: Setup, Build, Publish, and Deploy # Indented by 2 spaces from 'setup-build-publish-deploy'
-    runs-on: ubuntu-latest # Indented by 2 spaces from 'setup-build-publish-deploy'
-    permissions: # Indented by 2 spaces from 'setup-build-publish-deploy'
+jobs:
+  setup-build-publish-deploy:
+    name: Setup, Build, Publish, and Deploy
+    runs-on: ubuntu-latest
+    permissions:
       contents: 'read'
       # id-token: 'write' # Keep this commented out if using credentials_json
-    steps: # Indented by 2 spaces from 'setup-build-publish-deploy'
-    - name: Checkout code # Indented by 2 spaces from 'steps'
-      uses: actions/checkout@v4 # Indented by 2 spaces from '- name'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
     - name: Authenticate to GCP
       uses: 'google-github-actions/auth@v2'
       with:
-        credentials_json: '${{ secrets.GKE_SA_KEY }}' # Indented by 4 spaces from 'with'
+        credentials_json: '${{ secrets.GKE_SA_KEY }}'
 
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
@@ -47,10 +47,10 @@ jobs: # This 'jobs' should be at the same level as 'name', 'on', and 'env'
 
     - name: Deploy to GKE
       run: |
-        # Change --zone $GKE_ZONE to --region $GCP_REGION
-        gcloud container clusters get-credentials $GKE_CLUSTER --region $GCP_REGION 
-                
-                # Note: This sed command now uses a different delimiter '|' to avoid conflict with the '/' in the image path
-                sed -i "s|image:.*|image: ${{ env.IMAGE_PATH }}:${{ github.sha }}|" kubernetes/deployment.yaml
-                
-                kubectl apply -f kubernetes/
+        # Ensure you use --region here, and that GCP_REGION is correct
+        gcloud container clusters get-credentials $GKE_CLUSTER --region ${{ env.GCP_REGION }}
+        
+        # Note: This sed command now uses a different delimiter '|' to avoid conflict with the '/' in the image path
+        sed -i "s|image:.*|image: ${{ env.IMAGE_PATH }}:${{ github.sha }}|" kubernetes/deployment.yaml
+        
+        kubectl apply -f kubernetes/
