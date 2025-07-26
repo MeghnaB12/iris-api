@@ -7,7 +7,7 @@ on:
 env:
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GKE_CLUSTER: iris-cluster
-  GKE_ZONE: us-central1
+  GKE_ZONE: us-central1-a
   GCP_REGION: us-central1
   IMAGE_REPO: iris-api-repo
   IMAGE_NAME: iris-api
@@ -47,9 +47,10 @@ jobs: # This 'jobs' should be at the same level as 'name', 'on', and 'env'
 
     - name: Deploy to GKE
       run: |
-        gcloud container clusters get-credentials $GKE_CLUSTER --zone $GKE_ZONE
-        
-        # Note: This sed command now uses a different delimiter '|' to avoid conflict with the '/' in the image path
-        sed -i "s|image:.*|image: ${{ env.IMAGE_PATH }}:${{ github.sha }}|" kubernetes/deployment.yaml
-        
-        kubectl apply -f kubernetes/
+        # Change --zone $GKE_ZONE to --region $GCP_REGION
+        gcloud container clusters get-credentials $GKE_CLUSTER --region $GCP_REGION 
+                
+                # Note: This sed command now uses a different delimiter '|' to avoid conflict with the '/' in the image path
+                sed -i "s|image:.*|image: ${{ env.IMAGE_PATH }}:${{ github.sha }}|" kubernetes/deployment.yaml
+                
+                kubectl apply -f kubernetes/
