@@ -1,10 +1,10 @@
-# deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: iris-api
+  namespace: default
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: iris-api
@@ -14,8 +14,21 @@ spec:
         app: iris-api
     spec:
       containers:
-        - name: iris-api
-          # This image path will be dynamically created by GitHub Actions
-          image: ${{ secrets.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ secrets.REPO_NAME }}/iris-api:latest
-          ports:
-            - containerPort: 80
+      - name: iris-api
+        image: gcr.io/workoutvideos/iris-api:latest
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iris-api-service
+  namespace: default
+spec:
+  selector:
+    app: iris-api
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  type: LoadBalancer

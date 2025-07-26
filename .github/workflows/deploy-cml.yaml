@@ -1,48 +1,62 @@
-# .github/workflows/deploy-cml.yaml
-name: Build and Deploy Iris API to GKE
-
+name: CML Iris API CD Pipeline
 on:
   push:
-    branches:
-      - main
-
+    branches: [ "main" ]
 jobs:
-  build-and-deploy:
+  train-and-deploy:
     runs-on: ubuntu-latest
-
+    environment: production
     steps:
-    - name: Checkout Repo
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Authenticate to Google Cloud
-      uses: 'google-github-actions/auth@v2'
-      with:
-        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
 
-    - name: Set up Cloud SDK
-      uses: 'google-github-actions/setup-gcloud@v2'
+      - name: Install dependencies
+        run: |
+          pip install --no-cache-dir -r requirements.txt
 
-    - name: Configure Docker
-      run: gcloud auth configure-docker ${{ secrets.REGION }}-docker.pkg.dev
+      - name: Setup CML
+        uses: iterative/setup-cml@v2
+        with:
+          version: 'v0.20.0'
 
-    - name: Build and Push Docker Image
-      run: |
-        docker build -t ${{ secrets.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ secrets.REPO_NAME }}/iris-api:latest .
-        docker push ${{ secrets.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ secrets.REPO_NAME }}/iris-api:latest
-        
-    - name: Get GKE Credentials
-      uses: 'google-github-actions/get-gke-credentials@v2'
-      with:
-        cluster_name: iris-cluster # Make sure this matches your cluster name
-        location: ${{ secrets.REGION }}
-        project_id: ${{ secrets.PROJECT_ID }}
-        
-    - name: Deploy to GKE
-      run: |
-        # This will substitute the variables in the deployment.yaml file
-        sed -i 's|${{ secrets.REGION }}|'${{ secrets.REGION }}'|g' deployment.yaml
-        sed -i 's|${{ secrets.PROJECT_ID }}|'${{ secrets.PROJECT_ID }}'|g' deployment.yaml
-        sed -i 's|${{ secrets.REPO_NAME }}|'${{ secrets.REPO_NAME }}'|g' deployment.yaml
-        
-        kubectl apply -f deployment.yaml
-        kubectl apply -f service.yaml
+      - name: Train model and generate report
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python train.py --output plot.png
+          echo '## Iris Model Training Report' > report.md
+          echo '![Training Plot](./plot.png)' >> report.md
+          cml comment create --publish report.md
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@1bee7de035d65ec5da40a31f8589e240eba8fde5
+        with:
+          service_account_key: ${{ secrets.GKE_SA_KEY }}
+          project_id: workoutvideos
+
+      - name: Configure Docker for GCR
+        run: |
+          gcloud --quiet auth configure-docker
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t gcr.io/workoutvideos/iris-api:$GITHUB_SHA .
+          docker push gcr.io/workoutvideos/iris-api:$GITHUB_SHA
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@db150f2cc60d1716e61922b832eae71d2a45938f
+        with:
+          cluster_name: iris-cluster
+          location: us-central1
+          credentials: ${{ secrets.GKE_SA_KEY }}
+
+      - name: Deploy to GKE
+        run: |
+          kubectl apply -f k8s/deployment.yaml
+          kubectl set image deployment/iris-api iris-api=gcr.io/workoutvideos/iris-api:$GITHUB_SHA
+          kubectl rollout status deployment/iris-api
