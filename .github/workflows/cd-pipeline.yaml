@@ -10,7 +10,7 @@ env:
   GKE_CLUSTER: iris-cluster
   GKE_ZONE: us-central1-a
   GCP_REGION: us-central1
-  IMAGE_REPO: iris-api-repo
+  IMAGE_REPO: iris-api-repo # This is now correct as per your last message
   IMAGE_NAME: iris-api
   
 jobs:
@@ -18,8 +18,13 @@ jobs:
     name: Setup, Build, Publish, and Deploy
     runs-on: ubuntu-latest
     permissions:
-      contents: 'read' # Keep this for checking out code
-      # REMOVE THIS LINE: id-token: 'write' - This is the key change!
+      contents: 'read' 
+      # id-token: 'write' # Keep this commented out if using credentials_json
+    
+    # Define IMAGE_PATH directly here as a job-level environment variable
+    env:
+      IMAGE_PATH: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -27,7 +32,7 @@ jobs:
     - name: Authenticate to GCP
       uses: 'google-github-actions/auth@v2'
       with:
-        credentials_json: '${{ secrets.GKE_SA_KEY }}' # Keep this - your old way of authenticating
+        credentials_json: '${{ secrets.GKE_SA_KEY }}' # Ensure this matches your secret name
 
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
@@ -38,8 +43,9 @@ jobs:
     - name: Configure Docker
       run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev --quiet
 
-    - name: Define image path
-      run: echo "IMAGE_PATH=${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}" >> $GITHUB_ENV
+    # REMOVE THIS STEP - IMAGE_PATH is now defined at the job level
+    # - name: Define image path
+    #   run: echo "IMAGE_PATH=${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}" >> $GITHUB_ENV
 
     - name: Build and Push Docker image
       run: |
