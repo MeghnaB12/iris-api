@@ -10,7 +10,7 @@ env:
   GKE_CLUSTER: iris-cluster
   GKE_ZONE: us-central1-a
   GCP_REGION: us-central1
-  IMAGE_REPO: iris-repo
+  IMAGE_REPO: iris-api-repo
   IMAGE_NAME: iris-api
   
 jobs:
