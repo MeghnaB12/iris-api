@@ -18,16 +18,16 @@ jobs:
     name: Setup, Build, Publish, and Deploy
     runs-on: ubuntu-latest
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      contents: 'read' # Keep this for checking out code
+      # REMOVE THIS LINE: id-token: 'write' - This is the key change!
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Authenticate to GCP
-      uses: google-github-actions/auth@v2
+      uses: 'google-github-actions/auth@v2'
       with:
-        credentials_json: ${{ secrets.GCP_SA_KEY }}
+        credentials_json: '${{ secrets.GCP_SA_KEY }}' # Keep this - your old way of authenticating
 
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
