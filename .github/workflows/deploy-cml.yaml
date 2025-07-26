@@ -1,4 +1,4 @@
-```yaml
+
 name: CML Iris API CD Pipeline
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'  # Changed to 3.10 for numpy/scikit-learn compatibility
+          python-version: '3.10'  # Match runner environment
         run: |
           echo "Setting up Python 3.10"
           python --version
@@ -27,19 +27,19 @@ jobs:
       - name: Install Cython and numpy
         run: |
           echo "Installing Cython and numpy"
-          pip install Cython==3.0.11 numpy==1.26.4
-          pip list
+          python -m pip install Cython==3.0.11 numpy==1.26.4
+          python -m pip list
 
       - name: Install dependencies
         run: |
           echo "Installing remaining dependencies"
-          pip install --no-cache-dir -r requirements.txt
-          pip list
+          python -m pip install --no-cache-dir -r requirements.txt
+          python -m pip list
 
       - name: Setup CML
         uses: iterative/setup-cml@v2
         with:
-          version: 'latest'  # Use latest to avoid version issues
+          version: 'latest'  # Avoid version issues
         run: |
           echo "Setting up CML"
           cml --version
@@ -60,10 +60,10 @@ jobs:
         continue-on-error: true
         run: |
           echo "Starting model training"
-          python train.py --output plot.png || echo "Training AscTrain failed"
+          python train.py --output plot.png || echo "Training failed"
           ls -l plot.png || echo "Plot file not found"
           echo '## Iris Model Training Report' > report.md
-          echo '![Training Plot](./plot.pngTor)' >> report.md
+          echo '![Training Plot](./plot.png)' >> report.md
           cml comment create --publish report.md || echo "CML comment creation failed"
 
       - name: Setup gcloud CLI
@@ -100,9 +100,8 @@ jobs:
       - name: Deploy to GKE
         run: |
           echo "Applying Kubernetes manifests"
-          kubectl apply -f kubernetes/deployment.yaml || echo "Kubectl apply failed"
+          kubectl apply -f k8s/deployment.yaml || echo "Kubectl apply failed"
           echo "Updating deployment image"
           kubectl set image deployment/iris-api iris-api=gcr.io/workoutvideos/iris-api:$GITHUB_SHA || echo "Image update failed"
           echo "Checking rollout status"
           kubectl rollout status deployment/iris-api || echo "Rollout status check failed"
-```
