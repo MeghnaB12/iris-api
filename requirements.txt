@@ -1,7 +1,6 @@
-Cython==3.0.11
-numpy==1.26.4
-flask==3.0.3
-scikit-learn==1.5.2
-dvc==3.55.2
-matplotlib==3.9.2
-joblib==1.4.2
+# requirements.txt
+fastapi
+uvicorn[standard]
+scikit-learn
+pandas
+pydantic
