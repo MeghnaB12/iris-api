@@ -1,0 +1,56 @@
+# .github/workflows/cd-pipeline.yaml
+name: Build and Deploy to GKE
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GKE_CLUSTER: iris-cluster
+  GKE_ZONE: us-central1-a
+  GCP_REGION: us-central1
+  IMAGE_REPO: iris-repo
+  IMAGE_NAME: iris-api
+  
+jobs:
+  setup-build-publish-deploy:
+    name: Setup, Build, Publish, and Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Authenticate to GCP
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Install gke-gcloud-auth-plugin
+      run: gcloud components install gke-gcloud-auth-plugin
+
+    - name: Configure Docker
+      run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev --quiet
+
+    - name: Define image path
+      run: echo "IMAGE_PATH=${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.IMAGE_REPO }}/${{ env.IMAGE_NAME }}" >> $GITHUB_ENV
+
+    - name: Build and Push Docker image
+      run: |
+        docker build . --tag "${{ env.IMAGE_PATH }}:${{ github.sha }}"
+        docker push "${{ env.IMAGE_PATH }}:${{ github.sha }}"
+
+    - name: Deploy to GKE
+      run: |
+        gcloud container clusters get-credentials $GKE_CLUSTER --zone $GKE_ZONE
+        
+        # Note: This sed command now uses a different delimiter '|' to avoid conflict with the '/' in the image path
+        sed -i "s|image:.*|image: ${{ env.IMAGE_PATH }}:${{ github.sha }}|" kubernetes/deployment.yaml
+        
+        kubectl apply -f kubernetes/
