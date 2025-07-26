@@ -1,5 +1,7 @@
-fastapi
-uvicorn[standard]
-scikit-learn
+Cython==0.29.37
 numpy==1.24.4
-pydantic
+scikit-learn==1.2.2 # Pin scikit-learn to a version compatible with numpy 1.24.4
+pandas==1.5.3       # Pin pandas to a version compatible with numpy 1.24.4
+flask
+gunicorn
+uvicorn
