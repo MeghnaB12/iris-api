@@ -1,24 +1,19 @@
-# Use an official lightweight Python image
+# Use a specific Python version
 FROM python:3.10-slim
 
-# Set working directory
-WORKDIR /app
+# Set the working directory inside the container
+WORKDIR /code
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y build-essential
+# Copy the requirements file first to leverage Docker cache
+COPY ./requirements.txt /code/requirements.txt
 
-# Copy and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install dependencies
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
-# Copy the application code and model
-COPY . .
+# Copy all your application files from the root of your project to the /code directory
+COPY . /code/
 
-# Set the working directory to app
-WORKDIR /app/app
+# Command to run the application
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
 
-# Expose the port FastAPI will run on
-EXPOSE 8000
 
-# Run the FastAPI app with uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

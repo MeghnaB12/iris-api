@@ -1,0 +1,48 @@
+# .github/workflows/deploy-cml.yaml
+name: Build and Deploy Iris API to GKE
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+    - name: Set up Cloud SDK
+      uses: 'google-github-actions/setup-gcloud@v2'
+
+    - name: Configure Docker
+      run: gcloud auth configure-docker ${{ secrets.REGION }}-docker.pkg.dev
+
+    - name: Build and Push Docker Image
+      run: |
+        docker build -t ${{ secrets.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ secrets.REPO_NAME }}/iris-api:latest .
+        docker push ${{ secrets.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ secrets.REPO_NAME }}/iris-api:latest
+        
+    - name: Get GKE Credentials
+      uses: 'google-github-actions/get-gke-credentials@v2'
+      with:
+        cluster_name: iris-cluster # Make sure this matches your cluster name
+        location: ${{ secrets.REGION }}
+        project_id: ${{ secrets.PROJECT_ID }}
+        
+    - name: Deploy to GKE
+      run: |
+        # This will substitute the variables in the deployment.yaml file
+        sed -i 's|${{ secrets.REGION }}|'${{ secrets.REGION }}'|g' deployment.yaml
+        sed -i 's|${{ secrets.PROJECT_ID }}|'${{ secrets.PROJECT_ID }}'|g' deployment.yaml
+        sed -i 's|${{ secrets.REPO_NAME }}|'${{ secrets.REPO_NAME }}'|g' deployment.yaml
+        
+        kubectl apply -f deployment.yaml
+        kubectl apply -f service.yaml

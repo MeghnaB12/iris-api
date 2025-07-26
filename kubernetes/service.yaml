@@ -1,7 +1,8 @@
+# service.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: iris-api-service
+  name: iris-service
 spec:
   type: LoadBalancer
   selector:
@@ -9,4 +10,4 @@ spec:
   ports:
     - protocol: TCP
       port: 80
-      targetPort: 8000
+      targetPort: 80

@@ -1,11 +1,10 @@
+# deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: iris-api-deployment
-  labels:
-    app: iris-api
+  name: iris-api
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: iris-api
@@ -15,26 +14,8 @@ spec:
         app: iris-api
     spec:
       containers:
-      - name: iris-api
-        image: gcr.io/YOUR_PROJECT_ID/iris-api:latest  # ⬅️ Replace with your GCP image path
-        ports:
-        - containerPort: 8000
-        readinessProbe:
-          httpGet:
-            path: /docs
-            port: 8000
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 8000
-          initialDelaySeconds: 15
-          periodSeconds: 20
-        resources:
-          requests:
-            cpu: "250m"
-            memory: "256Mi"
-          limits:
-            cpu: "500m"
-            memory: "512Mi"
+        - name: iris-api
+          # This image path will be dynamically created by GitHub Actions
+          image: ${{ secrets.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ secrets.REPO_NAME }}/iris-api:latest
+          ports:
+            - containerPort: 80
