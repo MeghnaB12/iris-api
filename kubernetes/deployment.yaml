@@ -1,4 +1,25 @@
-# kubernetes/deployment.yaml
+# # kubernetes/deployment.yaml
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: iris-api-deployment
+# spec:
+#   replicas: 2
+#   selector:
+#     matchLabels:
+#       app: iris-api
+#   template:
+#     metadata:
+#       labels:
+#         app: iris-api
+#     spec:
+#       containers:
+#       - name: iris-api-container
+#         image: gcr.io/trans-market-461117-g0/iris-api:latest
+#         ports:
+#         - containerPort: 8000
+
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,3 +39,10 @@ spec:
         image: gcr.io/trans-market-461117-g0/iris-api:latest
         ports:
         - containerPort: 8000
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
