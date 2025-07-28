@@ -1,7 +1,12 @@
+# ~/iris-api/iris-api/locustfile.py
 from locust import HttpUser, task, between
 import random
 
 class IrisUser(HttpUser):
+    # --- IMPORTANT: ADD THIS LINE ---
+    host = "http://34.133.53.217:80" # Replace with your Iris API's EXTERNAL-IP and port 80
+    # ---------------------------------
+
     wait_time = between(1, 2)
 
     @task
