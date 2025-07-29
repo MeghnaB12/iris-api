@@ -8,7 +8,7 @@ env:
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GKE_CLUSTER: iris-cluster
   # REMOVE THIS LINE: GKE_ZONE: us-central1-a # <--- THIS WAS THE PROBLEM
-  GCP_REGION: us-central1 # This should be consistent with your cluster's region
+  GCP_REGION: us-central1-a # This should be consistent with your cluster's region
   IMAGE_REPO: iris-api-repo
   IMAGE_NAME: iris-api
 
