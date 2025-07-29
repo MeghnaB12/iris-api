@@ -16,7 +16,7 @@ spec:
       containers:
       - name: iris-api-container
         # *** IMPORTANT CHANGE HERE ***
-        image: image: us-central1-docker.pkg.dev/workoutvideos/iris-api-repo/iris-api:e33196890e6aff1fd4c25e931ffaf0b0e4b03da2 #gcr.io/workoutvideos/iris-api:v1.0.1  # <<< CHANGE THIS to your correct project ID
+        image: image: us-central1-docker.pkg.dev/workoutvideos/iris-api-repo/iris-api:v1.0.1 #gcr.io/workoutvideos/iris-api:v1.0.1  # <<< CHANGE THIS to your correct project ID
         ports:
         - containerPort: 8000
         resources:
